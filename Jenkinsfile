@@ -68,7 +68,7 @@ pipeline {
             }
         }
 
-        // Phase 6 : Notification
+        // Phase 6 : Notification mail et Slack
         stage('Notification') {
             steps {
                 script {
