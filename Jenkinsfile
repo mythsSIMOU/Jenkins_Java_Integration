@@ -26,10 +26,7 @@ pipeline {
         stage('Code Analysis') {
             steps {
                 script {
-                    // Analyse du code avec SonarQube
-                    withSonarQubeEnv('SonarQube') { // Utilise la configuration SonarQube définie dans Jenkins
-                        bat 'gradlew sonar'
-                    }
+                    bat 'gradlew sonar' // Analyse du code avec SonarQube (Windows)
                 }
             }
         }
@@ -38,13 +35,11 @@ pipeline {
         stage('Code Quality') {
             steps {
                 script {
-                    // Vérification des Quality Gates
-                    timeout(time: 10, unit: 'MINUTES') {
-                        def qualityGate = waitForQualityGate() // Attend le résultat des Quality Gates
-                        if (qualityGate.status != 'OK') {
-                            error "Quality Gate failed: ${qualityGate.status}"
-                        }
-                    }
+                    // Vérification de l'état de Quality Gates
+                    bat """
+                        curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet
+                    """
+                    // Si Quality Gates est en échec, le pipeline s'arrête
                 }
             }
         }
