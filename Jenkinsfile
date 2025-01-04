@@ -4,7 +4,7 @@ pipeline {
     environment {
         // Configuration des variables d'environnement (hardcodées)
         SONAR_HOST_URL = 'http://197.140.142.82:9000/'
-        SONAR_AUTH_TOKEN = 'votre-token-sonar' // Token SonarQube hardcodé
+        SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3' // Token SonarQube hardcodé
         MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
         MAVEN_REPO_USERNAME = 'myMavenRepo' // Nom d'utilisateur MyMavenRepo hardcodé
         MAVEN_REPO_PASSWORD = '123456789' // Mot de passe MyMavenRepo hardcodé
@@ -26,7 +26,10 @@ pipeline {
         stage('Code Analysis') {
             steps {
                 script {
-                    bat 'gradlew sonarqube' // Analyse du code avec SonarQube (Windows)
+                    // Analyse du code avec SonarQube
+                    withSonarQubeEnv('SonarQube') { // Utilise la configuration SonarQube définie dans Jenkins
+                        bat 'gradlew sonar'
+                    }
                 }
             }
         }
@@ -35,11 +38,13 @@ pipeline {
         stage('Code Quality') {
             steps {
                 script {
-                    // Vérification de l'état de Quality Gates
-                    bat """
-                        curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet
-                    """
-                    // Si Quality Gates est en échec, le pipeline s'arrête
+                    // Vérification des Quality Gates
+                    timeout(time: 10, unit: 'MINUTES') {
+                        def qualityGate = waitForQualityGate() // Attend le résultat des Quality Gates
+                        if (qualityGate.status != 'OK') {
+                            error "Quality Gate failed: ${qualityGate.status}"
+                        }
+                    }
                 }
             }
         }
@@ -76,9 +81,8 @@ pipeline {
                     emailext (
                         subject: 'Pipeline Status: ${currentBuild.currentResult}',
                         body: 'Le pipeline a terminé avec le statut : ${currentBuild.currentResult}',
-                        to: 'dev-team@example.com'
+                        to: 'lw_beldjoudi@esi.dz'
                     )
-                    // Notification sur Slack (si configuré)
                     slackSend (
                         channel: '#dev-team',
                         message: 'Le pipeline a terminé avec le statut : ${currentBuild.currentResult}'

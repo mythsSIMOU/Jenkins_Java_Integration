@@ -44,10 +44,12 @@ jacocoTestReport {
     }
 }
 
-sonarqube {
+sonar {
     properties {
         property 'sonar.host.url', 'http://197.140.142.82:9000/' // URL de votre instance SonarQube
         property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3' // Votre token SonarQube
+        property 'sonar.projectKey', 'Wassim_OGL' // Clé du projet SonarQube
+        property 'sonar.projectName', 'Wassim_OGL' // Nom du projet SonarQube
     }
 }
 
