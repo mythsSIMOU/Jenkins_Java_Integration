@@ -7,7 +7,7 @@ pipeline {
                 script {
                     try {
                         // Run unit tests
-                        bat 'gradle test'
+                        bat './gradlew test'
 
                         // Archive test results
                         junit '**/build/test-results/test/*.xml'
@@ -30,7 +30,7 @@ pipeline {
                 script {
                     try {
                         withSonarQubeEnv('SonarQube') {
-                            bat 'gradle sonar'
+                            bat './gradlew sonar'
                         }
                     } catch (Exception e) {
                         notifyFailure('Code Analysis')
@@ -60,10 +60,10 @@ pipeline {
                 script {
                     try {
                         // Generate JAR
-                        bat 'gradle build -x test'
+                        bat './gradlew build -x test'
 
                         // Generate JavaDoc
-                        bat 'gradle javadoc'
+                        bat './gradlew javadoc'
 
                         // Archive artifacts
                         archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
@@ -80,7 +80,7 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat 'gradle publish'
+                        bat './gradlew publish'
                     } catch (Exception e) {
                         notifyFailure('Deploy')
                         throw e
