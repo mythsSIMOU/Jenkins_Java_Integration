@@ -30,17 +30,18 @@ pipeline {
             }
         }
 
-        // Phase 3 : Code Quality
-        stage('Code Quality') {
-            steps {
-                script {
-                    def response = sh(script: "curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet", returnStdout: true).trim()
-                    if (response.contains('"status":"ERROR"')) {
-                        error "Quality gate failed. Stopping pipeline."
-                    }
-                }
-            }
-        }
+       // Phase 3 : Code Quality
+       stage('Code Quality') {
+           steps {
+               script {
+                   def response = bat(script: "curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet", returnStdout: true).trim()
+                   if (response.contains('"status":"ERROR"')) {
+                       error "Quality gate failed. Stopping pipeline."
+                   }
+               }
+           }
+       }
+
 
         // Phase 4 : Build
         stage('Build') {
