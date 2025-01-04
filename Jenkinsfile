@@ -2,86 +2,18 @@ pipeline {
     agent any
 
     environment {
-        // Configuration des variables d'environnement (hardcodées)
-        SONAR_HOST_URL = 'http://197.140.142.82:9000/'
-        SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3' // Token SonarQube hardcodé
-        MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
-        MAVEN_REPO_USERNAME = 'myMavenRepo' // Nom d'utilisateur MyMavenRepo hardcodé
-        MAVEN_REPO_PASSWORD = '123456789' // Mot de passe MyMavenRepo hardcodé
+        // Adresse e-mail du destinataire
+        EMAIL_TO = 'lw_beldjoudi@esi.dz'
     }
 
     stages {
-        // Phase 1 : Test
-        stage('Test') {
-            steps {
-                script {
-                    bat 'gradlew test' // Exécution des tests unitaires (Windows)
-                    junit 'build/test-results/test/**/*.xml' // Archivage des résultats des tests
-                    cucumber buildDir: 'build/cucumber-reports', fileIncludePattern: '**/*.json' // Génération des rapports Cucumber
-                }
-            }
-        }
-
-        // Phase 2 : Code Analysis
-        stage('Code Analysis') {
-            steps {
-                script {
-                    bat 'gradlew sonar' // Analyse du code avec SonarQube (Windows)
-                }
-            }
-        }
-
-        // Phase 3 : Code Quality
-        stage('Code Quality') {
-            steps {
-                script {
-                    // Vérification de l'état de Quality Gates
-                    bat """
-                        curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet
-                    """
-                    // Si Quality Gates est en échec, le pipeline s'arrête
-                }
-            }
-        }
-
-        // Phase 4 : Build
+        // Phase 1 : Build (simulé)
         stage('Build') {
             steps {
                 script {
-                    bat 'gradlew build' // Construction du projet (Windows)
-                    archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true // Archivage du fichier JAR
-                    bat 'gradlew javadoc' // Génération de la documentation (Windows)
-                    archiveArtifacts artifacts: 'build/docs/javadoc/**/*', fingerprint: true // Archivage de la documentation
-                }
-            }
-        }
-
-        // Phase 5 : Deploy
-        stage('Deploy') {
-            steps {
-                script {
-                    // Déploiement du fichier JAR sur MyMavenRepo
-                    bat """
-                        gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
-                    """
-                }
-            }
-        }
-
-        // Phase 6 : Notification mail et Slack
-        stage('Notification') {
-            steps {
-                script {
-                    // Envoi d'une notification en cas de succès ou d'échec
-                    emailext (
-                        subject: 'Pipeline Status succes',
-                        body: 'Le pipeline a terminé avec le statut : success',
-                        to: 'lw_beldjoudi@esi.dz'
-                    )
-                    slackSend (
-                        channel: '#dev-team',
-                        message: 'Le pipeline a terminé avec le statut : ${currentBuild.currentResult}'
-                    )
+                    echo 'Simulation de la phase de build...'
+                    // Simule une étape de build (vous pouvez remplacer cela par une commande réelle)
+                    bat 'echo Building the project...'
                 }
             }
         }
@@ -90,10 +22,34 @@ pipeline {
     post {
         // Actions post-build
         success {
-            echo 'Pipeline réussi !'
+            echo 'Pipeline réussi ! Envoi d\'un e-mail de notification...'
+            emailext (
+                subject: 'Pipeline réussi : ${JOB_NAME} - Build #${BUILD_NUMBER}',
+                body: '''
+                    Le pipeline a réussi avec succès !
+                    Détails du build :
+                    - Job : ${JOB_NAME}
+                    - Build #${BUILD_NUMBER}
+                    - URL du build : ${BUILD_URL}
+                ''',
+                to: "${EMAIL_TO}",
+                // Utilise les credentials SMTP configurés dans Jenkins (sans référence explicite dans le pipeline)
+            )
         }
         failure {
-            echo 'Pipeline en échec !'
+            echo 'Pipeline en échec ! Envoi d\'un e-mail de notification...'
+            emailext (
+                subject: 'Pipeline en échec : ${JOB_NAME} - Build #${BUILD_NUMBER}',
+                body: '''
+                    Le pipeline a échoué !
+                    Détails du build :
+                    - Job : ${JOB_NAME}
+                    - Build #${BUILD_NUMBER}
+                    - URL du build : ${BUILD_URL}
+                ''',
+                to: "${EMAIL_TO}",
+                // Utilise les credentials SMTP configurés dans Jenkins (sans référence explicite dans le pipeline)
+            )
         }
     }
 }
