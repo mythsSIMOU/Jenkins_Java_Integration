@@ -1,45 +1,33 @@
 plugins {
     id 'java'
-    id 'jacoco-report-aggregation'
-    id("org.sonarqube") version "4.4.0.3356"
-    id 'maven-publish' // Plugin for publishing artifacts to a Maven repository
+    id 'jacoco'
+    id 'org.sonarqube' version '4.4.1.3373'
+    id 'maven-publish'
 }
 
 group = 'com.example'
-version = '1.0.0'
+version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
-    maven {
-        name = "MyMavenRepo"
-        url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
-        credentials {
-            username = "myMavenRepo"
-            password = "123456789"
-        }
-    }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-    implementation 'io.cucumber:cucumber-java:7.0.0'
-    testImplementation 'io.cucumber:cucumber-junit:7.0.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
+    testImplementation 'io.cucumber:cucumber-java:7.11.1'
+    testImplementation 'io.cucumber:cucumber-junit:7.11.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
 }
 
 test {
-    systemProperty 'cucumber.plugin', 'json:reports/cucumber-report.json'
-}
-
-tasks.test {
-    finalizedBy tasks.jacocoTestReport // Ensure the Jacoco report runs after tests
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
 
 jacocoTestReport {
     reports {
-        xml.required.set(true)
-        csv.required.set(false)
-        html.outputLocation.set(file("$buildDir/reports/jacoco/html"))
+        xml.required = true
+        html.required = true
     }
 }
 
@@ -49,7 +37,13 @@ sonar {
         property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3'
         property 'sonar.projectKey', 'Wassim_OGL'
         property 'sonar.projectName', 'Wassim_OGL'
+        property 'sonar.java.binaries', 'build/classes'
+        property 'sonar.coverage.jacoco.xmlReportPaths', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
     }
+}
+
+javadoc {
+    destinationDir = file("${buildDir}/docs/javadoc")
 }
 
 publishing {
@@ -60,8 +54,8 @@ publishing {
     }
     repositories {
         maven {
-            name = "MyMavenRepo"
-            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
+            name = 'myMavenRepo'
+            url = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
             credentials {
                 username = "myMavenRepo"
                 password = "123456789"
