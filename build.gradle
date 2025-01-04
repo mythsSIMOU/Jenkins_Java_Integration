@@ -1,16 +1,24 @@
+import groovy.json.JsonOutput
+import java.net.HttpURLConnection
+import java.net.URL
+
 plugins {
     id 'java'
     id "com.github.spacialcircumstances.gradle-cucumber-reporting" version "0.1.25"
-    id 'jacoco'
+    id 'jacoco-report-aggregation'
     id("org.sonarqube") version "4.4.0.3356"
     id 'maven-publish'
+    id "com.github.jk1.tcdeps" version "1.6.2"
 }
+
 
 group = 'com.example'
 version = '1.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
+    maven { url "https://plugins.gradle.org/m2/" }
 }
 
 dependencies {
@@ -18,56 +26,134 @@ dependencies {
     testImplementation 'io.cucumber:cucumber-junit:6.0.0'
     testImplementation 'junit:junit:4.12'
     implementation 'com.sendgrid:sendgrid-java:4.9.3'
+    implementation 'com.sendgrid:java-http-client:4.5.1'
 }
 
 cucumberReports {
     outputDir = file('build/reports/cucumber')
+    buildId = '0'
     reports = files('reports/cucumber-report.json')
 }
 
 jacocoTestReport {
     reports {
         xml.required.set(true)
+        csv.required.set(false)
         html.outputLocation.set(file("$buildDir/reports/jacoco/html"))
     }
+    finalizedBy tasks.javadoc
 }
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
+            groupId = 'com.example'  // Votre group ID
+            artifactId = 'tp5-matrix-library'  // Nom de votre artifact
+            version = '1.0-SNAPSHOT'
+
         }
     }
 
     repositories {
         maven {
-            url = uri(System.getenv('MYMAVENREPO_URL'))
+            name = "MyMavenRepo"
+            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
             credentials {
-                username = System.getenv('MYMAVENREPO_USERNAME')
-                password = System.getenv('MYMAVENREPO_PASSWORD')
+                username = "myMavenRepo"
+                password = "123456789"
             }
         }
     }
 }
 
+
 tasks.register('sendSlackNotification') {
     doLast {
-        def webhookUrl = System.getenv('SLACK_WEBHOOK_URL')
-        if (!webhookUrl) {
-            println "Slack Webhook URL is not defined!"
-            return
-        }
-        def payload = JsonOutput.toJson([text: "Build completed successfully!"])
+        def webhookUrl = 'https://hooks.slack.com/services/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'
+        def buildResult = 'SUCCESS'
+        def message = "Build status: ${buildResult}"
+
+        def payload = JsonOutput.toJson([text: message])
         def connection = new URL(webhookUrl).openConnection() as HttpURLConnection
         connection.requestMethod = 'POST'
         connection.doOutput = true
         connection.setRequestProperty('Content-Type', 'application/json')
         connection.outputStream.write(payload.bytes)
-        println "Slack notification response code: ${connection.responseCode}"
+
+        if (connection.responseCode == 200) {
+            println "Slack notification sent successfully."
+        } else {
+            println "Failed to send Slack notification. Response: ${connection.responseCode}"
+        }
     }
 }
 
+// Sending email using SendGrid
+tasks.register('sendEmailNotification') {
+    doLast {
+        javaexec {
+            mainClass = 'com.example.service.EmailService'
+            classpath = sourceSets.main.runtimeClasspath
+            args = [
+                    'lw_beldjoudi@esi.dz',
+                    'Deployed Successfully',
+                    'The application has been deployed successfully!'
+            ]
+        }
+    }
+}
+
+test {
+    systemProperty 'cucumber.plugin', 'json:reports/cucumber-report.json'
+}
 tasks.test {
-    useJUnitPlatform()
-    finalizedBy jacocoTestReport
+    doLast {
+        println 'Running test task'
+    }
+    finalizedBy tasks.jacocoTestReport
+}
+
+
+tasks.sonar {
+    doLast {
+        println 'Running SonarQube analysis'
+    }
+    finalizedBy tasks.javadoc
+}
+
+javadoc {
+
+    source = sourceSets.main.allJava
+    classpath = configurations.runtimeClasspath
+    destinationDir = file("$buildDir/docs/javadoc")
+    finalizedBy tasks.publish
+
+}
+
+
+tasks.publish {
+    doLast {
+        println 'Publishing artifacts'
+    }
+    finalizedBy tasks.sendSlackNotification, tasks.sendEmailNotification
+}
+
+tasks.sendSlackNotification {
+    doLast {
+        println 'Sending Slack notification'
+    }
+}
+
+tasks.sendEmailNotification {
+    doLast {
+        println 'Sending email notification'
+    }
+}
+
+tasks.build {
+    dependsOn tasks.test
+    doLast {
+        println 'Building project'
+    }
 }
