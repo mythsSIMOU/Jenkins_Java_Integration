@@ -2,11 +2,12 @@ pipeline {
     agent any
 
     environment {
-        // Configuration des variables d'environnement
+        // Configuration des variables d'environnement (hardcodées)
         SONAR_HOST_URL = 'http://197.140.142.82:9000/'
-        SONAR_AUTH_TOKEN = credentials('sonar-token') // Token SonarQube stocké dans Jenkins
+        SONAR_AUTH_TOKEN = 'votre-token-sonar' // Token SonarQube hardcodé
         MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
-        MAVEN_REPO_CREDENTIALS = credentials('maven-repo-credentials') // Credentials Maven stockés dans Jenkins
+        MAVEN_REPO_USERNAME = 'myMavenRepo' // Nom d'utilisateur MyMavenRepo hardcodé
+        MAVEN_REPO_PASSWORD = '123456789' // Mot de passe MyMavenRepo hardcodé
     }
 
     stages {
@@ -35,9 +36,9 @@ pipeline {
             steps {
                 script {
                     // Vérification de l'état de Quality Gates
-                    bat '''
-                        curl -u %SONAR_AUTH_TOKEN%: %SONAR_HOST_URL%/api/qualitygates/project_status?projectKey=your-project-key
-                    '''
+                    bat """
+                        curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet
+                    """
                     // Si Quality Gates est en échec, le pipeline s'arrête
                 }
             }
@@ -59,7 +60,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    bat 'gradlew publish' // Déploiement du fichier JAR sur MyMavenRepo (Windows)
+                    // Déploiement du fichier JAR sur MyMavenRepo
+                    bat """
+                        gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
+                    """
                 }
             }
         }
