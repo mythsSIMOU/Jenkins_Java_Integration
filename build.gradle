@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'jacoco' // Plugin pour les rapports de couverture de code
+    id 'jacoco-report-aggregation'
     id 'org.sonarqube' version '3.3' // Plugin pour l'analyse de code avec SonarQube
     id 'maven-publish' // Plugin pour publier des artefacts sur un dépôt Maven
 }
@@ -28,14 +28,19 @@ dependencies {
 }
 
 test {
-    useJUnitPlatform()
-    finalizedBy jacocoTestReport // Génère un rapport de couverture de code après les tests
+    systemProperty 'cucumber.plugin', 'json:reports/cucumber-report.json'
 }
-
+tasks.test {
+    doLast {
+        println 'Running test task'
+    }
+    finalizedBy tasks.jacocoTestReport
+}
 jacocoTestReport {
     reports {
-        xml.required = true // Rapport XML pour SonarQube
-        html.required = true // Rapport HTML pour consultation locale
+        xml.required.set(true)
+        csv.required.set(false)
+        html.outputLocation.set(file("$buildDir/reports/jacoco/html"))
     }
 }
 
