@@ -29,6 +29,23 @@ dependencies {
 
 test {
     useJUnitPlatform()
+
+    // Configuration détaillée des tests
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+        showStandardStreams = true
+    }
+
+    // Configuration de la sortie des rapports
+    reports {
+        html.required = true
+        junitXml {
+            required = true
+            outputLocation = layout.buildDirectory.dir('test-results')
+        }
+    }
+
     systemProperty 'cucumber.plugin', 'json:build/reports/cucumber/cucumber-report.json'
     finalizedBy jacocoTestReport
 }
@@ -39,6 +56,8 @@ jacocoTestReport {
         csv.required = false
         html.outputLocation = file("$buildDir/reports/jacoco/html")
     }
+
+    dependsOn test
 }
 
 sonar {

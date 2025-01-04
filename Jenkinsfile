@@ -14,22 +14,46 @@ pipeline {
             steps {
                 script {
                     try {
-                        bat './gradlew clean test'
-                        junit '**/build/test-results/test/*.xml'
-                        cucumber buildStatus: 'UNSTABLE',
-                                fileIncludePattern: '**/build/reports/cucumber/cucumber-report.json',
-                                reportTitle: 'Cucumber Report',
-                                classificationsFilePattern: '',
-                                trendsLimit: 10
+                        // Nettoyage du répertoire avant les tests
+                        bat 'if exist build rmdir /s /q build'
+
+                        // Exécution des tests
+                        bat './gradlew test --info'
+
+                        // Attendre un moment pour s'assurer que les fichiers sont générés
+                        sleep 5
+
+                        // Archivage des résultats de test avec un chemin plus précis
+                        junit(
+                            allowEmptyResults: true,
+                            testResults: 'build/test-results/**/*.xml',
+                            keepLongStdio: true
+                        )
+
+                        // Génération des rapports Cucumber
+                        cucumber(
+                            buildStatus: 'UNSTABLE',
+                            fileIncludePattern: '**/build/reports/cucumber/cucumber-report.json',
+                            reportTitle: 'Cucumber Report',
+                            classificationsFilePattern: '',
+                            trendsLimit: 10
+                        )
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
-                        notifyBuildStatus('FAILURE', 'Test stage failed')
+                        notifyBuildStatus('FAILURE', "Test stage failed: ${e.message}")
                         throw e
                     }
                 }
             }
+            post {
+                always {
+                    // Afficher le contenu du répertoire build pour le débogage
+                    bat 'dir /s build'
+                }
+            }
         }
 
+        // Reste des stages inchangés...
         stage('Code Analysis') {
             steps {
                 script {
