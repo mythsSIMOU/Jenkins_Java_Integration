@@ -74,8 +74,8 @@ pipeline {
                 script {
                     // Envoi d'une notification en cas de succès ou d'échec
                     emailext (
-                        subject: 'Pipeline Status: ${currentBuild.currentResult}',
-                        body: 'Le pipeline a terminé avec le statut : ${currentBuild.currentResult}',
+                        subject: 'Pipeline Status succes',
+                        body: 'Le pipeline a terminé avec le statut : success',
                         to: 'lw_beldjoudi@esi.dz'
                     )
                     slackSend (
