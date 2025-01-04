@@ -1,5 +1,9 @@
 plugins {
     id 'java'
+    id "com.github.spacialcircumstances.gradle-cucumber-reporting" version "0.1.25"
+    id 'jacoco'
+    id("org.sonarqube") version "4.4.0.3356"
+    id 'maven-publish'
 }
 
 group = 'com.example'
@@ -10,10 +14,60 @@ repositories {
 }
 
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'io.cucumber:cucumber-java:6.0.0'
+    testImplementation 'io.cucumber:cucumber-junit:6.0.0'
+    testImplementation 'junit:junit:4.12'
+    implementation 'com.sendgrid:sendgrid-java:4.9.3'
 }
 
-test {
+cucumberReports {
+    outputDir = file('build/reports/cucumber')
+    reports = files('reports/cucumber-report.json')
+}
+
+jacocoTestReport {
+    reports {
+        xml.required.set(true)
+        html.outputLocation.set(file("$buildDir/reports/jacoco/html"))
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            url = uri(System.getenv('MYMAVENREPO_URL'))
+            credentials {
+                username = System.getenv('MYMAVENREPO_USERNAME')
+                password = System.getenv('MYMAVENREPO_PASSWORD')
+            }
+        }
+    }
+}
+
+tasks.register('sendSlackNotification') {
+    doLast {
+        def webhookUrl = System.getenv('SLACK_WEBHOOK_URL')
+        if (!webhookUrl) {
+            println "Slack Webhook URL is not defined!"
+            return
+        }
+        def payload = JsonOutput.toJson([text: "Build completed successfully!"])
+        def connection = new URL(webhookUrl).openConnection() as HttpURLConnection
+        connection.requestMethod = 'POST'
+        connection.doOutput = true
+        connection.setRequestProperty('Content-Type', 'application/json')
+        connection.outputStream.write(payload.bytes)
+        println "Slack notification response code: ${connection.responseCode}"
+    }
+}
+
+tasks.test {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
 }
