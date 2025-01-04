@@ -2,7 +2,7 @@ plugins {
     id 'java'
     id 'jacoco-report-aggregation'
     id("org.sonarqube") version "4.4.0.3356"
-    id 'maven-publish' // Plugin pour publier des artefacts sur un dépôt Maven
+    id 'maven-publish' // Plugin for publishing artifacts to a Maven repository
 }
 
 group = 'com.example'
@@ -12,10 +12,10 @@ repositories {
     mavenCentral()
     maven {
         name = "MyMavenRepo"
-        url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/") // URL de votre dépôt Maven
+        url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
         credentials {
-            username = "myMavenRepo" // Nom d'utilisateur pour MyMavenRepo
-            password = "123456789" // Mot de passe pour MyMavenRepo
+            username = "myMavenRepo"
+            password = "123456789"
         }
     }
 }
@@ -23,19 +23,18 @@ repositories {
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-    implementation 'io.cucumber:cucumber-java:7.0.0' // Pour les tests Cucumber
+    implementation 'io.cucumber:cucumber-java:7.0.0'
     testImplementation 'io.cucumber:cucumber-junit:7.0.0'
 }
 
 test {
     systemProperty 'cucumber.plugin', 'json:reports/cucumber-report.json'
 }
+
 tasks.test {
-    doLast {
-        println 'Running test task'
-    }
-    finalizedBy tasks.jacocoTestReport
+    finalizedBy tasks.jacocoTestReport // Ensure the Jacoco report runs after tests
 }
+
 jacocoTestReport {
     reports {
         xml.required.set(true)
@@ -46,10 +45,10 @@ jacocoTestReport {
 
 sonar {
     properties {
-        property 'sonar.host.url', 'http://197.140.142.82:9000/' // URL de votre instance SonarQube
-        property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3' // Votre token SonarQube
-        property 'sonar.projectKey', 'Wassim_OGL' // Clé du projet SonarQube
-        property 'sonar.projectName', 'Wassim_OGL' // Nom du projet SonarQube
+        property 'sonar.host.url', 'http://197.140.142.82:9000/'
+        property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3'
+        property 'sonar.projectKey', 'Wassim_OGL'
+        property 'sonar.projectName', 'Wassim_OGL'
     }
 }
 
@@ -62,10 +61,10 @@ publishing {
     repositories {
         maven {
             name = "MyMavenRepo"
-            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/") // URL de votre dépôt Maven
+            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
             credentials {
-                username = "myMavenRepo" // Nom d'utilisateur pour MyMavenRepo
-                password = "123456789" // Mot de passe pour MyMavenRepo
+                username = "myMavenRepo"
+                password = "123456789"
             }
         }
     }
