@@ -1,24 +1,29 @@
 pipeline {
     agent any
 
+    environment {
+        SONAR_HOST_URL = 'http://197.140.142.82:9000/'
+        SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3'
+        MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
+        MAVEN_REPO_USERNAME = 'myMavenRepo'
+        MAVEN_REPO_PASSWORD = '123456789'
+    }
+
     stages {
         stage('Test') {
             steps {
                 script {
                     try {
-                        // Run unit tests
-                        bat './gradlew test'
-
-                        // Archive test results
+                        bat './gradlew clean test'
                         junit '**/build/test-results/test/*.xml'
-
-                        // Generate Cucumber reports
                         cucumber buildStatus: 'UNSTABLE',
+                                fileIncludePattern: '**/build/reports/cucumber/cucumber-report.json',
                                 reportTitle: 'Cucumber Report',
-                                fileIncludePattern: '**/cucumber.json',
+                                classificationsFilePattern: '',
                                 trendsLimit: 10
                     } catch (Exception e) {
-                        notifyFailure('Test')
+                        currentBuild.result = 'FAILURE'
+                        notifyBuildStatus('FAILURE', 'Test stage failed')
                         throw e
                     }
                 }
@@ -33,7 +38,8 @@ pipeline {
                             bat './gradlew sonar'
                         }
                     } catch (Exception e) {
-                        notifyFailure('Code Analysis')
+                        currentBuild.result = 'FAILURE'
+                        notifyBuildStatus('FAILURE', 'Code Analysis failed')
                         throw e
                     }
                 }
@@ -44,11 +50,12 @@ pipeline {
             steps {
                 script {
                     try {
-                        timeout(time: 1, unit: 'MINUTES') {
+                        timeout(time: 5, unit: 'MINUTES') {
                             waitForQualityGate abortPipeline: true
                         }
                     } catch (Exception e) {
-                        notifyFailure('Quality Gate')
+                        currentBuild.result = 'FAILURE'
+                        notifyBuildStatus('FAILURE', 'Quality Gate check failed')
                         throw e
                     }
                 }
@@ -59,17 +66,13 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Generate JAR
-                        bat './gradlew build -x test'
-
-                        // Generate JavaDoc
-                        bat './gradlew javadoc'
-
-                        // Archive artifacts
+                        bat './gradlew clean build -x test'
                         archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-                        archiveArtifacts artifacts: 'build/docs/**', fingerprint: true
+                        bat './gradlew javadoc'
+                        archiveArtifacts artifacts: 'build/docs/javadoc/**', fingerprint: true
                     } catch (Exception e) {
-                        notifyFailure('Build')
+                        currentBuild.result = 'FAILURE'
+                        notifyBuildStatus('FAILURE', 'Build stage failed')
                         throw e
                     }
                 }
@@ -82,7 +85,8 @@ pipeline {
                     try {
                         bat './gradlew publish'
                     } catch (Exception e) {
-                        notifyFailure('Deploy')
+                        currentBuild.result = 'FAILURE'
+                        notifyBuildStatus('FAILURE', 'Deploy stage failed')
                         throw e
                     }
                 }
@@ -93,36 +97,34 @@ pipeline {
     post {
         success {
             script {
-                // Send success notification to email
-                emailext (
-                    subject: "Pipeline Successful: ${currentBuild.fullDisplayName}",
-                    body: "The pipeline has completed successfully.",
-                    to: 'lw_beldjoudi@esi.dz',
-                    mimeType: 'text/html'
-                )
-
-                // Send success notification to Slack
-                slackSend (
-                    color: 'good',
-                    message: "Pipeline successful: ${currentBuild.fullDisplayName}"
-                )
+                notifyBuildStatus('SUCCESS', 'Pipeline completed successfully')
+            }
+        }
+        failure {
+            script {
+                notifyBuildStatus('FAILURE', 'Pipeline failed')
             }
         }
     }
 }
 
-def notifyFailure(String stageName) {
-    // Send failure notification to email
+def notifyBuildStatus(String status, String message) {
+    // Email notification
     emailext (
-        subject: "Pipeline Failed at ${stageName}: ${currentBuild.fullDisplayName}",
-        body: "The pipeline has failed at stage ${stageName}.",
+        subject: "Pipeline ${status}: ${currentBuild.fullDisplayName}",
+        body: """<p>Build Status: ${status}</p>
+                <p>Message: ${message}</p>
+                <p>Build URL: ${env.BUILD_URL}</p>""",
         to: 'lw_beldjoudi@esi.dz',
-        mimeType: 'text/html'
+        mimeType: 'text/html',
+        recipientProviders: [[$class: 'DevelopersRecipientProvider']]
     )
 
-    // Send failure notification to Slack
-    slackSend (
-        color: 'danger',
-        message: "Pipeline failed at stage ${stageName}: ${currentBuild.fullDisplayName}"
+    // Slack notification
+    def color = status == 'SUCCESS' ? 'good' : 'danger'
+    slackSend(
+        channel: '#dev-team',
+        color: color,
+        message: "${status}: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]' (${env.BUILD_URL})\n${message}"
     )
 }

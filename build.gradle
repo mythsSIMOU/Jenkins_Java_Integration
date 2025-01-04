@@ -1,33 +1,43 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.sonarqube' version '4.4.1.3373'
+    id 'org.sonarqube' version '4.4.0.3356'
     id 'maven-publish'
 }
 
 group = 'com.example'
-version = '1.0-SNAPSHOT'
+version = '1.0.0'
 
 repositories {
     mavenCentral()
+    maven {
+        name = "MyMavenRepo"
+        url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
+        credentials {
+            username = "myMavenRepo"
+            password = "123456789"
+        }
+    }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.2'
-    testImplementation 'io.cucumber:cucumber-java:7.11.1'
-    testImplementation 'io.cucumber:cucumber-junit:7.11.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    implementation 'io.cucumber:cucumber-java:7.0.0'
+    testImplementation 'io.cucumber:cucumber-junit:7.0.0'
 }
 
 test {
     useJUnitPlatform()
+    systemProperty 'cucumber.plugin', 'json:build/reports/cucumber/cucumber-report.json'
     finalizedBy jacocoTestReport
 }
 
 jacocoTestReport {
     reports {
         xml.required = true
-        html.required = true
+        csv.required = false
+        html.outputLocation = file("$buildDir/reports/jacoco/html")
     }
 }
 
@@ -37,13 +47,7 @@ sonar {
         property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3'
         property 'sonar.projectKey', 'Wassim_OGL'
         property 'sonar.projectName', 'Wassim_OGL'
-        property 'sonar.java.binaries', 'build/classes'
-        property 'sonar.coverage.jacoco.xmlReportPaths', "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
     }
-}
-
-javadoc {
-    destinationDir = file("${buildDir}/docs/javadoc")
 }
 
 publishing {
@@ -54,8 +58,8 @@ publishing {
     }
     repositories {
         maven {
-            name = 'myMavenRepo'
-            url = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
+            name = "MyMavenRepo"
+            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
             credentials {
                 username = "myMavenRepo"
                 password = "123456789"
