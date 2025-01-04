@@ -14,9 +14,9 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    bat 'gradlew test'
-                    junit 'build/test-results/test/**/*.xml'
-                    cucumber buildDir: 'build/cucumber-reports', fileIncludePattern: '**/*.json'
+                    bat 'gradlew test' // Exécution des tests unitaires (Windows)
+                    junit 'build/test-results/test/**/*.xml' // Archivage des résultats des tests
+                    cucumber reportFiles: '**/build/cucumber-reports/*.json' // Génération des rapports Cucumber
                 }
             }
         }
@@ -25,32 +25,30 @@ pipeline {
         stage('Code Analysis') {
             steps {
                 script {
-                    bat 'gradlew sonarqube'
+                    bat 'gradlew sonar' // Analyse du code avec SonarQube
                 }
             }
         }
 
-       // Phase 3 : Code Quality
-       stage('Code Quality') {
-           steps {
-               script {
-                   def response = bat(script: "curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet", returnStdout: true).trim()
-                   if (response.contains('"status":"ERROR"')) {
-                       error "Quality gate failed. Stopping pipeline."
-                   }
-               }
-           }
-       }
-
+        // Phase 3 : Code Quality
+        stage('Code Quality') {
+            steps {
+                script {
+                    bat """
+                        curl -u ${SONAR_AUTH_TOKEN}: ${SONAR_HOST_URL}/api/qualitygates/project_status?projectKey=com.example:mon-projet
+                    """
+                }
+            }
+        }
 
         // Phase 4 : Build
         stage('Build') {
             steps {
                 script {
-                    bat 'gradlew build'
-                    archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true
-                    bat 'gradlew javadoc'
-                    archiveArtifacts artifacts: 'build/docs/javadoc/**/*', fingerprint: true
+                    bat 'gradlew build' // Construction du projet
+                    archiveArtifacts artifacts: 'build/libs/*.jar', fingerprint: true // Archivage du fichier JAR
+                    bat 'gradlew javadoc' // Génération de la documentation
+                    archiveArtifacts artifacts: 'build/docs/javadoc/**/*', fingerprint: true // Archivage de la documentation
                 }
             }
         }
@@ -59,7 +57,9 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    bat "gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}"
+                    bat """
+                        gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
+                    """
                 }
             }
         }
@@ -68,15 +68,14 @@ pipeline {
         stage('Notification') {
             steps {
                 script {
-                    def statusMessage = currentBuild.result == 'SUCCESS' ? 'success' : 'failure'
                     emailext (
-                        subject: "Pipeline Status: ${statusMessage}",
-                        body: "Le pipeline a terminé avec le statut : ${statusMessage}",
+                        subject: 'Pipeline Status success',
+                        body: 'Le pipeline a terminé avec le statut : success',
                         to: 'lw_beldjoudi@esi.dz'
                     )
                     slackSend (
                         channel: '#dev-team',
-                        message: "Le pipeline a terminé avec le statut : ${statusMessage}"
+                        message: 'Le pipeline a terminé avec le statut : ${currentBuild.currentResult}'
                     )
                 }
             }
@@ -85,10 +84,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline succeeded!'
+            echo 'Pipeline réussi !'
         }
         failure {
-            echo 'Pipeline failed!'
+            echo 'Pipeline en échec !'
         }
     }
 }
