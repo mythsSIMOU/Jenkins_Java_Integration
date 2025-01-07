@@ -11,22 +11,29 @@ environment {
 
 
     stages {
-        // Phase 1 : Test
-                stage('Test') {
-                    steps {
-                        script {
-                            bat 'gradlew test' // Exécution des tests unitaires (Windows)
-                            junit 'build/test-results/test/**/*.xml' // Archivage des résultats des tests
-                            cucumber buildDir: 'build/cucumber-reports', fileIncludePattern: '**/*.json' // Génération des rapports Cucumber
-                        }
-                    }
-                }
+        stage('Test') {
+            steps {
+                bat 'gradlew compileJava'
+                bat 'gradlew clean test'
+                junit '**/build/test-results/test/*.xml'
+                cucumber(
+                    fileIncludePattern: '**/cucumber.json',
+                    jsonReportDirectory: 'build/reports/cucumber'
+                )
+            }
+        }
 
-        // Phase 2 : Code Analysis
-                stage('Code Analysis') {
+        stage('Code Analysis') {
+                    environment {
+                        SONAR_HOST_URL = 'http://197.140.142.82:9000'
+                    }
                     steps {
-                        script {
-                            bat 'gradlew sonar' // Analyse du code avec SonarQube
+                        withSonarQubeEnv('sonarqube') {
+                            bat """
+                                ./gradlew.bat sonarqube \
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
+                                -Dsonar.gradle.skipCompile=true
+                            """
                         }
                     }
                 }
