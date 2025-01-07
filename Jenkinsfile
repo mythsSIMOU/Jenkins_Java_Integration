@@ -8,10 +8,10 @@ pipeline {
                     echo 'Testing email notification...'
 
                     // Remplacer SUCCESS par FAILURE si vous voulez tester un email d'échec.
-                    currentBuild.result = 'SUCCESS'
+                    currentBuild.result = 'FAILURE'
 
                     if (currentBuild.result == 'SUCCESS') {
-                        mail to: 'lw_beldjoudi@esi.dz',
+                        mail to: 'wassimbeldjoudi.wb@gmail.com',
                              subject: "Test - Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                              body: """Bonjour,
                                       Ceci est un test de notification pour une build réussie.
@@ -20,7 +20,7 @@ pipeline {
                                       Jenkins URL: ${env.BUILD_URL}
                                       """
                     } else {
-                        mail to: 'lw_beldjoudi@esi.dz',
+                        mail to: 'wassimbeldjoudi.wb@gmail.com',
                              subject: "Test - Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                              body: """Bonjour,
                                       Ceci est un test de notification pour une build échouée.
