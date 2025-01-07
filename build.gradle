@@ -1,52 +1,31 @@
 plugins {
     id 'java'
     id 'jacoco'
-    id 'org.sonarqube' version '4.4.0.3356'
+    id("com.github.spacialcircumstances.gradle-cucumber-reporting") version "0.1.25"
+    id("org.sonarqube") version "4.4.1.3373"
     id 'maven-publish'
 }
 
 group = 'com.example'
-version = '1.0.0'
+version = '1.0'
 
 repositories {
     mavenCentral()
-    maven {
-        name = "MyMavenRepo"
-        url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
-        credentials {
-            username = "myMavenRepo"
-            password = "123456789"
-        }
-    }
 }
 
 dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
-    implementation 'io.cucumber:cucumber-java:7.0.0'
-    testImplementation 'io.cucumber:cucumber-junit:7.0.0'
+    testImplementation 'io.cucumber:cucumber-java:6.0.0'
+    testImplementation 'io.cucumber:cucumber-junit:6.0.0'
+    testImplementation 'junit:junit:4.13.1'
+}
+
+cucumberReports {
+    outputDir = file('build/reports/cucumber')
+    buildId = '0'
+    reports = files('reports/example-report.json')
 }
 
 test {
-    useJUnitPlatform()
-
-    // Configuration détaillée des tests
-    testLogging {
-        events "passed", "skipped", "failed"
-        exceptionFormat "full"
-        showStandardStreams = true
-    }
-
-    // Configuration de la sortie des rapports
-    reports {
-        html.required = true
-        junitXml {
-            required = true
-            outputLocation = layout.buildDirectory.dir('test-results')
-        }
-    }
-
-    systemProperty 'cucumber.plugin', 'json:build/reports/cucumber/cucumber-report.json'
     finalizedBy jacocoTestReport
 }
 
@@ -54,10 +33,8 @@ jacocoTestReport {
     reports {
         xml.required = true
         csv.required = false
-        html.outputLocation = file("$buildDir/reports/jacoco/html")
+        html.required = true
     }
-
-    dependsOn test
 }
 
 sonar {
@@ -66,23 +43,28 @@ sonar {
         property 'sonar.login', '31506ababc12919cbd806fafe389c7f005c105a3'
         property 'sonar.projectKey', 'Wassim_OGL'
         property 'sonar.projectName', 'Wassim_OGL'
+        property "sonar.gradle.skipCompile", "true"
+        property "sonar.java.binaries", "${buildDir}/classes"
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", "src/test/java"
+        property "sonar.java.coveragePlugin", "jacoco"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
     }
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-        }
-    }
     repositories {
         maven {
-            name = "MyMavenRepo"
             url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
             credentials {
-                username = "myMavenRepo"
-                password = "123456789"
+                username = 'myMavenRepo'
+                password = '123456789'
             }
+        }
+    }
+    publications {
+        maven(MavenPublication) {
+            from components.java
         }
     }
 }

@@ -1,35 +1,105 @@
 pipeline {
     agent any
 
+environment {
+        SONAR_HOST_URL = 'http://197.140.142.82:9000/'
+        SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3'
+        MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
+        MAVEN_REPO_USERNAME = 'myMavenRepo'
+        MAVEN_REPO_PASSWORD = '123456789'
+    }
+
+
     stages {
-        stage('Email Notification Test') {
+        stage('Test') {
+            steps {
+                bat 'gradlew compileJava'
+                bat 'gradlew clean test'
+                junit '**/build/test-results/test/*.xml'
+                cucumber(
+                    fileIncludePattern: '**/cucumber.json',
+                    jsonReportDirectory: 'build/reports/cucumber'
+                )
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    bat """
+                        gradlew sonarqube \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.gradle.skipCompile=true
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
             steps {
                 script {
-                    echo 'Testing email notification...'
-
-                    // Remplacer SUCCESS par FAILURE si vous voulez tester un email d'échec.
-                    currentBuild.result = 'FAILURE'
-
-                    if (currentBuild.result == 'SUCCESS') {
-                        mail to: 'wassimbeldjoudi.wb@gmail.com',
-                             subject: "Test - Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                             body: """Bonjour,
-                                      Ceci est un test de notification pour une build réussie.
-                                      Projet: ${env.JOB_NAME}
-                                      Build Number: ${env.BUILD_NUMBER}
-                                      Jenkins URL: ${env.BUILD_URL}
-                                      """
-                    } else {
-                        mail to: 'wassimbeldjoudi.wb@gmail.com',
-                             subject: "Test - Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                             body: """Bonjour,
-                                      Ceci est un test de notification pour une build échouée.
-                                      Projet: ${env.JOB_NAME}
-                                      Build Number: ${env.BUILD_NUMBER}
-                                      Jenkins URL: ${env.BUILD_URL}
-                                      """
+                    timeout(time: 1, unit: 'HOURS') {
+                        def qualityGate = waitForQualityGate()
+                        if (qualityGate.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                        }
                     }
                 }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                bat 'gradlew clean build'
+                bat 'gradlew javadoc'
+                archiveArtifacts artifacts: [
+                    '**/build/libs/*.jar',
+                    '**/build/docs/**'
+                ].join(','), fingerprint: true
+            }
+        }
+
+        // Phase 5 : Deploy
+                stage('Deploy') {
+                    steps {
+                        script {
+                            bat """
+                                gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
+                            """
+                        }
+                    }
+                }
+
+        stage('Notifications') {
+            steps {
+                script {
+                    currentBuild.result = currentBuild.result ?: 'SUCCESS'
+
+                    if (currentBuild.result == 'SUCCESS') {
+                        echo 'Sending success notifications...'
+                        mail to: 'wassimbeldjoudi.wb@gmail.com',
+                             subject: "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                             body: "The build and deployment for ${env.JOB_NAME} #${env.BUILD_NUMBER} was successful."
+                    } else {
+                        echo 'Sending failure notifications...'
+                        mail to: 'wassimbeldjoudi.wb@gmail.com',
+                             subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                             body: "The build for ${env.JOB_NAME} #${env.BUILD_NUMBER} failed. Check the logs for details."
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            node('any') {
+                jacoco(
+                    execPattern: '**/build/jacoco/*.exec',
+                    classPattern: '**/build/classes/java/main',
+                    sourcePattern: '**/src/main/java'
+                )
+                cleanWs()
             }
         }
     }
