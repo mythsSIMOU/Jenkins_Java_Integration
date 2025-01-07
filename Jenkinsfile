@@ -11,17 +11,16 @@ environment {
 
 
     stages {
-        stage('Test') {
-            steps {
-                bat 'gradlew compileJava'
-                bat 'gradlew clean test'
-                junit '**/build/test-results/test/*.xml'
-                cucumber(
-                    fileIncludePattern: '**/cucumber.json',
-                    jsonReportDirectory: 'build/reports/cucumber'
-                )
-            }
-        }
+        // Phase 1 : Test
+                stage('Test') {
+                    steps {
+                        script {
+                            bat 'gradlew test' // Exécution des tests unitaires (Windows)
+                            junit 'build/test-results/test/**/*.xml' // Archivage des résultats des tests
+                            cucumber buildDir: 'build/cucumber-reports', fileIncludePattern: '**/*.json' // Génération des rapports Cucumber
+                        }
+                    }
+                }
 
         // Phase 2 : Code Analysis
                 stage('Code Analysis') {
