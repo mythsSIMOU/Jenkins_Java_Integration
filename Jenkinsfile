@@ -24,13 +24,14 @@ pipeline {
 
         stage('Code Analysis') {
             steps {
-                withSonarQubeEnv('sonarqube') {
+                withSonarQubeEnv('mySonarQube') {
                     bat """
                         ./gradlew sonar \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.gradle.skipCompile=true
                     """
                 }
+
             }
         }
 
