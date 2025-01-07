@@ -23,17 +23,14 @@ environment {
             }
         }
 
-        stage('Code Analysis') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    bat """
-                        gradlew sonar \
-                        -Dsonar.host.url=${SONAR_HOST_URL} \
-                        -Dsonar.gradle.skipCompile=true
-                    """
+        // Phase 2 : Code Analysis
+                stage('Code Analysis') {
+                    steps {
+                        script {
+                            bat 'gradlew sonar' // Analyse du code avec SonarQube
+                        }
+                    }
                 }
-            }
-        }
 
         stage('Quality Gate') {
             steps {
