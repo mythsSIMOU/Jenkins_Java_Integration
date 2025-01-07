@@ -27,7 +27,7 @@ environment {
             steps {
                 withSonarQubeEnv('sonarqube') {
                     bat """
-                        gradlew sonarqube \
+                        gradlew sonar \
                         -Dsonar.host.url=${SONAR_HOST_URL} \
                         -Dsonar.gradle.skipCompile=true
                     """
