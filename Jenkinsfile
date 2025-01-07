@@ -1,14 +1,13 @@
 pipeline {
     agent any
 
-environment {
+    environment {
         SONAR_HOST_URL = 'http://197.140.142.82:9000/'
         SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3'
         MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
         MAVEN_REPO_USERNAME = 'myMavenRepo'
         MAVEN_REPO_PASSWORD = '123456789'
     }
-
 
     stages {
         stage('Test') {
@@ -24,19 +23,16 @@ environment {
         }
 
         stage('Code Analysis') {
-                    environment {
-                        SONAR_HOST_URL = 'http://197.140.142.82:9000'
-                    }
-                    steps {
-                        withSonarQubeEnv('sonarqube') {
-                            bat """
-                                ./gradlew.bat sonarqube \
-                                -Dsonar.host.url=${SONAR_HOST_URL} \
-                                -Dsonar.gradle.skipCompile=true
-                            """
-                        }
-                    }
+            steps {
+                withSonarQubeEnv('sonarqube') {
+                    bat """
+                        ./gradlew sonar \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.gradle.skipCompile=true
+                    """
                 }
+            }
+        }
 
         stage('Quality Gate') {
             steps {
@@ -62,16 +58,15 @@ environment {
             }
         }
 
-        // Phase 5 : Deploy
-                stage('Deploy') {
-                    steps {
-                        script {
-                            bat """
-                                gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
-                            """
-                        }
-                    }
+        stage('Deploy') {
+            steps {
+                script {
+                    bat """
+                        gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
+                    """
                 }
+            }
+        }
 
         stage('Notifications') {
             steps {
@@ -93,5 +88,4 @@ environment {
             }
         }
     }
-
 }
