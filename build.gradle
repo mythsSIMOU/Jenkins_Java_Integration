@@ -22,8 +22,9 @@ dependencies {
 cucumberReports {
     outputDir = file('build/reports/cucumber')
     buildId = '0'
-    reports = files('reports/example-report.json')
+    reports = files('reports/cucumber-report.json', 'reports/example-report.json')  // Inclure les deux fichiers JSON
 }
+
 
 test {
     finalizedBy jacocoTestReport

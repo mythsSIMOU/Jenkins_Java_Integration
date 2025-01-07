@@ -16,9 +16,9 @@ pipeline {
                 bat 'gradlew clean test'
                 junit '**/build/test-results/test/*.xml'
                 cucumber(
-                    fileIncludePattern: '**/cucumber.json',
-                    jsonReportDirectory: 'build/reports/cucumber'
-                )
+                                    fileIncludePattern: '**/cucumber-report.json,**/example-report.json',  // Inclure les deux fichiers JSON
+                                    jsonReportDirectory: 'reports'  // Répertoire des fichiers JSON (reports)
+                                )
             }
         }
 
