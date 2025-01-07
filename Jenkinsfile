@@ -2,26 +2,33 @@ pipeline {
     agent any
 
     stages {
-        stage('Notification') {
+        stage('Email Notification Test') {
             steps {
                 script {
-                    // Envoyer une notification par email
-                    emailext (
-                        subject: "Test Email Notification: ${currentBuild.currentResult}",
-                        body: """
-                        Bonjour,
+                    echo 'Testing email notification...'
 
-                        Ceci est un test de la notification par email depuis Jenkins.
+                    // Remplacer SUCCESS par FAILURE si vous voulez tester un email d'échec.
+                    currentBuild.result = 'SUCCESS'
 
-                        Status du build: ${currentBuild.currentResult}
-                        Job: ${env.JOB_NAME}
-                        Build: ${env.BUILD_NUMBER}
-
-                        Cordialement,
-                        Votre pipeline Jenkins
-                        """,
-                        to: "lw_beldjoudi@esi.dz"
-                    )
+                    if (currentBuild.result == 'SUCCESS') {
+                        mail to: 'lw_beldjoudi@esi.dz',
+                             subject: "Test - Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                             body: """Bonjour,
+                                      Ceci est un test de notification pour une build réussie.
+                                      Projet: ${env.JOB_NAME}
+                                      Build Number: ${env.BUILD_NUMBER}
+                                      Jenkins URL: ${env.BUILD_URL}
+                                      """
+                    } else {
+                        mail to: 'lw_beldjoudi@esi.dz',
+                             subject: "Test - Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                             body: """Bonjour,
+                                      Ceci est un test de notification pour une build échouée.
+                                      Projet: ${env.JOB_NAME}
+                                      Build Number: ${env.BUILD_NUMBER}
+                                      Jenkins URL: ${env.BUILD_URL}
+                                      """
+                    }
                 }
             }
         }
