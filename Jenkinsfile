@@ -3,9 +3,6 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://197.140.142.82:9000/'
-        MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
-        MAVEN_REPO_USERNAME = 'myMavenRepo'
-        MAVEN_REPO_PASSWORD = '123456789'
     }
 
     stages {
@@ -64,7 +61,7 @@ pipeline {
                     echo "Using Repository URL: ${env.MAVEN_REPO_URL}"
 
                     // Exécution de la commande Gradle sans avoir à passer les credentials manuellement
-                    bat './gradlew.bat publish'
+                    bat './gradlew publish'
                 }
             }
         }
