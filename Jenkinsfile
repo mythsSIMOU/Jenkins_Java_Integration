@@ -16,7 +16,7 @@ pipeline {
                 junit '**/build/test-results/test/*.xml'
                 cucumber(
                     fileIncludePattern: '**/cucumber-report.json,**/example-report.json',
-                    jsonReportDirectory: 'reports'  // Répertoire des fichiers JSON (reports)
+                    jsonReportDirectory: 'reports'
                 )
             }
         }
@@ -30,7 +30,6 @@ pipeline {
                         -Dsonar.gradle.skipCompile=true
                     """
                 }
-
             }
         }
 
@@ -71,27 +70,19 @@ pipeline {
         stage('Notifications') {
             steps {
                 script {
-                    currentBuild.result = currentBuild.result ?: 'SUCCESS'
+                    def buildStatus = currentBuild.result ?: 'FAILURE'
+                    def slackColor = buildStatus == 'SUCCESS' ? 'good' : 'danger'
+                    def slackMessage = buildStatus == 'SUCCESS' ?
+                        "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}" :
+                        "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
 
-                    // Slack notification for successful builds
-                    if (currentBuild.result == 'SUCCESS') {
-                        slackSend(channel: '#jenkinscicd', message: "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-                    } else {
-                        slackSend(channel: '#jenkinscicd', message: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-                    }
+                    // Envoi de la notification Slack avec couleur
+                    slackSend(channel: '#jenkinscicd', message: slackMessage, color: slackColor)
 
-                    // Email notifications
-                    if (currentBuild.result == 'SUCCESS') {
-                        echo 'Sending success notifications...'
-                        mail to: 'wassimbeldjoudi.wb@gmail.com',
-                             subject: "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                             body: "The build and deployment for ${env.JOB_NAME} #${env.BUILD_NUMBER} was successful."
-                    } else {
-                        echo 'Sending failure notifications...'
-                        mail to: 'wassimbeldjoudi.wb@gmail.com',
-                             subject: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                             body: "The build for ${env.JOB_NAME} #${env.BUILD_NUMBER} failed. Check the logs for details."
-                    }
+                    // Envoi de la notification par email
+                    mail to: 'wassimbeldjoudi.wb@gmail.com',
+                         subject: "${buildStatus} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                         body: "Le build et le déploiement pour ${env.JOB_NAME} #${env.BUILD_NUMBER} a ${buildStatus == 'SUCCESS' ? 'réussi' : 'échoué'}."
                 }
             }
         }
