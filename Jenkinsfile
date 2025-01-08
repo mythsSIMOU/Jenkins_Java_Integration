@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         SONAR_HOST_URL = 'http://197.140.142.82:9000/'
-        SONAR_AUTH_TOKEN = '31506ababc12919cbd806fafe389c7f005c105a3'
         MAVEN_REPO_URL = 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/'
         MAVEN_REPO_USERNAME = 'myMavenRepo'
         MAVEN_REPO_PASSWORD = '123456789'
@@ -16,9 +15,9 @@ pipeline {
                 bat 'gradlew clean test'
                 junit '**/build/test-results/test/*.xml'
                 cucumber(
-                                    fileIncludePattern: '**/cucumber-report.json,**/example-report.json',  // Inclure les deux fichiers JSON
-                                    jsonReportDirectory: 'reports'  // Répertoire des fichiers JSON (reports)
-                                )
+                    fileIncludePattern: '**/cucumber-report.json,**/example-report.json',
+                    jsonReportDirectory: 'reports'  // Répertoire des fichiers JSON (reports)
+                )
             }
         }
 
@@ -74,6 +73,14 @@ pipeline {
                 script {
                     currentBuild.result = currentBuild.result ?: 'SUCCESS'
 
+                    // Slack notification for successful builds
+                    if (currentBuild.result == 'SUCCESS') {
+                        slackSend(channel: '#jenkinscicd', message: "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+                    } else {
+                        slackSend(channel: '#jenkinscicd', message: "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+                    }
+
+                    // Email notifications
                     if (currentBuild.result == 'SUCCESS') {
                         echo 'Sending success notifications...'
                         mail to: 'wassimbeldjoudi.wb@gmail.com',
