@@ -60,29 +60,32 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    bat """
-                        gradlew publish -PmavenRepoUsername=${MAVEN_REPO_USERNAME} -PmavenRepoPassword=${MAVEN_REPO_PASSWORD}
-                    """
+                    echo "Deploying to Maven Repository"
+                    echo "Using Repository URL: ${env.MAVEN_REPO_URL}"
+
+                    // Exécution de la commande Gradle sans avoir à passer les credentials manuellement
+                    bat './gradlew.bat publish'
                 }
             }
         }
 
+
         stage('Notifications') {
             steps {
                 script {
-                    def buildStatus = currentBuild.result ?: 'FAILURE'
+                    def buildStatus = currentBuild.result ?: 'SUCCESS'
                     def slackColor = buildStatus == 'SUCCESS' ? 'good' : 'danger'
                     def slackMessage = buildStatus == 'SUCCESS' ?
                         "Build Success: ${env.JOB_NAME} #${env.BUILD_NUMBER}" :
                         "Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
 
-                    // Envoi de la notification Slack avec couleur
+                    // Sending Slack notification with color
                     slackSend(channel: '#jenkinscicd', message: slackMessage, color: slackColor)
 
-                    // Envoi de la notification par email
+                    // Sending email notification
                     mail to: 'wassimbeldjoudi.wb@gmail.com',
                          subject: "${buildStatus} - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                         body: "Le build et le déploiement pour ${env.JOB_NAME} #${env.BUILD_NUMBER} a ${buildStatus == 'SUCCESS' ? 'réussi' : 'échoué'}."
+                         body: "The build and deployment for ${env.JOB_NAME} #${env.BUILD_NUMBER} has ${buildStatus == 'SUCCESS' ? 'succeeded' : 'failed'}."
                 }
             }
         }

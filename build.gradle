@@ -22,7 +22,7 @@ dependencies {
 cucumberReports {
     outputDir = file('build/reports/cucumber')
     buildId = '0'
-    reports = files('reports/cucumber-report.json', 'reports/example-report.json')  // Inclure les deux fichiers JSON
+    reports = files('reports/cucumber-report.json', 'reports/example-report.json')
 }
 
 
@@ -56,10 +56,10 @@ sonar {
 publishing {
     repositories {
         maven {
-            url = uri("https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/")
+            url = uri(System.getenv('MAVEN_REPO_URL') ?: 'https://mymavenrepo.com/repo/2uH666PIedOzsAI77gey/') // Utilisation de la variable d'environnement MAVEN_REPO_URL
             credentials {
-                username = 'myMavenRepo'
-                password = '123456789'
+                username = System.getenv('MAVEN_REPO_USERNAME') ?: 'defaultUser' // Utilisation de la variable d'environnement MAVEN_REPO_USERNAME
+                password = System.getenv('MAVEN_REPO_PASSWORD') ?: 'defaultPassword' // Utilisation de la variable d'environnement MAVEN_REPO_PASSWORD
             }
         }
     }
